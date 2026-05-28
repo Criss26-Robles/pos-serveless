@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: sales-api-serverless - API de productos y ventas sobre Lambda + DynamoDB
+
+Globals:
+  Function:
+    Runtime: java21
+    MemorySize: 512
+    Timeout: 30
+    Environment:
+      Variables:
+        TABLA_PRODUCTOS: !Ref TablaProductos
+        TABLA_VENTAS: !Ref TablaVentas
+
+Resources:
+
+  ProductosLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ProductosLambda
+      Handler: com.salesapi.productos.ProductosHandler::handleRequest
+      CodeUri: productos-lambda/
+      Environment:
+        Variables:
+          TABLA_PRODUCTOS: !Ref TablaProductos
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:GetItem
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt TablaProductos.Arn
+                - !Sub "${TablaProductos.Arn}/index/*"
+      Events:
+        BuscarProductos:
+          Type: Api
+          Properties:
+            Path: /productos
+            Method: GET
+
+  CrearProductoLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CrearProductoLambda
+      Handler: com.salesapi.productos.CrearProductoHandler::handleRequest
+      CodeUri: productos-lambda/
+      Environment:
+        Variables:
+          TABLA_PRODUCTOS: !Ref TablaProductos
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt TablaProductos.Arn
+      Events:
+        CrearProducto:
+          Type: Api
+          Properties:
+            Path: /productos
+            Method: POST
+
+  VentasLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: VentasLambda
+      Handler: com.salesapi.ventas.VentasHandler::handleRequest
+      CodeUri: ventas-lambda/
+      Environment:
+        Variables:
+          TABLA_VENTAS: !Ref TablaVentas
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt TablaVentas.Arn
+      Events:
+        RegistrarVenta:
+          Type: Api
+          Properties:
+            Path: /ventas
+            Method: POST
+
+  ConsultaVentasLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ConsultaVentasLambda
+      Handler: com.salesapi.ventas.ConsultaVentasHandler::handleRequest
+      CodeUri: ventas-lambda/
+      Environment:
+        Variables:
+          TABLA_VENTAS: !Ref TablaVentas
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Scan
+              Resource: !GetAtt TablaVentas.Arn
+      Events:
+        ConsultarVentas:
+          Type: Api
+          Properties:
+            Path: /ventas
+            Method: GET
+
+  TablaProductos:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TablaProductos
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: codigo_barras
+          AttributeType: S
+        - AttributeName: nombre
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CodigoBarrasIndex
+          KeySchema:
+            - AttributeName: codigo_barras
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: NombreIndex
+          KeySchema:
+            - AttributeName: nombre
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  TablaVentas:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TablaVentas
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ventaId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ventaId
+          KeyType: HASH
+
+Outputs:
+  ApiUrl:
+    Description: URL base de la API
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  TablaProductosArn:
+    Description: ARN de TablaProductos
+    Value: !GetAtt TablaProductos.Arn
+  TablaVentasArn:
+    Description: ARN de TablaVentas
+    Value: !GetAtt TablaVentas.Arn

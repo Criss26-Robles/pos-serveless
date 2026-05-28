@@ -1,0 +1,59 @@
+# ============================================================
+# sales-api-serverless — .gitignore
+# ============================================================
+
+# --- Entornos y credenciales sensibles ---
+.env
+.env.*
+!.env.example
+*.env
+credentials
+.aws/credentials
+.aws/config
+
+# --- Artefactos de build Maven ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# --- JARs compilados (excluir todos; SAM usa los generados en tiempo de build) ---
+*.jar
+*.war
+*.ear
+
+# --- Artefactos de AWS SAM ---
+.aws-sam/build/
+.aws-sam/
+
+# --- Archivos de caché de jqwik (property-based testing) ---
+.jqwik-database
+
+# --- IDEs ---
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+*.swp
+*.swo
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- Windows ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Archivos temporales ---
+*.tmp
+*.bak
+*.orig
